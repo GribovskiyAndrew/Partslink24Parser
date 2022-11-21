@@ -7,9 +7,9 @@ namespace Partslink24Parser.Entities
 
         public string Model { get; set; }
 
-        public DateTime DateOfProduction { get; set; }
+        public string DateOfProduction { get; set; }
 
-        public DateTime Year { get; set; }
+        public int Year { get; set; }
 
         public string SalesType { get; set; }
 
@@ -23,9 +23,7 @@ namespace Partslink24Parser.Entities
 
         public string RoofColor { get; set; }
 
-        public string ExteriorColor { get; set; }
-
-        public string PaintCode { get; set; }
+        public string ExteriorColorAndPaintCode { get; set; }
 
         public bool Done { get; set; }
 

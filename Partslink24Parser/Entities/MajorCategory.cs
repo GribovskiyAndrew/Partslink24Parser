@@ -12,7 +12,7 @@ namespace Partslink24Parser.Entities
 
         public bool Done { get; set; }
 
-        public int VariantId { get; set; }
+        public int VehicleDataId { get; set; }
 
         public virtual VehicleData VehicleData { get; set; }
 

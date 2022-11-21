@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http;
 
 namespace Partslink24Parser
 {
@@ -51,7 +52,7 @@ namespace Partslink24Parser
             if (string.IsNullOrEmpty(name))
                 return;
 
-            string file = "C:\\Users\\lifebookE\\source\\repos\\Partslink24Parser\\Partslink24Parser\\Images" + name.Substring(name.LastIndexOf('/') + 1);
+            string file = "C:\\Users\\lifebookE\\source\\repos\\Partslink24Parser\\Partslink24Parser\\Images" + name;
 
             string url = "https://boodmo.com/media/cache/part_zoom_horizontal" + name;
 
@@ -132,13 +133,25 @@ namespace Partslink24Parser
                 var content = JsonSerializer.Serialize(data);
                 var buffer = Encoding.UTF8.GetBytes(content);
                 var byteContent = new ByteArrayContent(buffer);
-                byteContent.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                byteContent.Headers.ContentType = MediaTypeHeaderValue.Parse("application/json; charset=UTF-8");
 
                 request.Content = byteContent;
 
-                var response = await _httpClient.SendAsync(request);
+                try
+                {
+                    Console.WriteLine("before send");
+                    var response = await _httpClient.SendAsync(request);
 
-                return await GetResponse(response);
+                    Console.WriteLine("after send");
+
+                    return await GetResponse(response);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    throw;
+                }
+
             }
         }
 

@@ -108,6 +108,7 @@ namespace Partslink24Parser
 
         public async Task<JObject> Get(string url)
         {
+            
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
                 foreach (var header in headers)
@@ -137,21 +138,9 @@ namespace Partslink24Parser
 
                 request.Content = byteContent;
 
-                try
-                {
-                    Console.WriteLine("before send");
-                    var response = await _httpClient.SendAsync(request);
+                var response = await _httpClient.SendAsync(request);
 
-                    Console.WriteLine("after send");
-
-                    return await GetResponse(response);
-                }
-                catch(Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    throw;
-                }
-
+                return await GetResponse(response);
             }
         }
 

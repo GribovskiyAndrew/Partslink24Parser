@@ -11,4 +11,4 @@ RequestManager requestManager = new RequestManager();
 
 Parser parser = new Parser(requestManager, context);
 
-parser.Run();
+await parser.Run();

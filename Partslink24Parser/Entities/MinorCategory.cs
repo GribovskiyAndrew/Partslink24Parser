@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,11 +15,9 @@ namespace Partslink24Parser.Entities
 
         public string Description { get; set; }
         
-        public string Remark { get; set; }
+        public string? Remark { get; set; }
         
-        public string Model { get; set; }
-
-        public string ImageName { get; set; }
+        public string? Model { get; set; }
 
         public bool Done { get; set; }
 
@@ -27,5 +26,8 @@ namespace Partslink24Parser.Entities
         public virtual MajorCategory MajorCategory { get; set; }
 
         public virtual ICollection<Part> Parts { get; set; }
+
+        [NotMapped]
+        public string Path { get; set; }
     }
 }

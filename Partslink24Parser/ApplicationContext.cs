@@ -29,6 +29,8 @@ namespace Partslink24Parser
 
         public DbSet<Part> Parts { get; set; }
 
+        public DbSet<Point> Points { get; set; }
+
         public DbSet<PartInformation> PartInformation { get; set; }
 
     }

@@ -14,6 +14,8 @@ namespace Partslink24Parser.Entities
 
         public string Price { get; set; }
 
+        public string Type { get; set; }
+
         public int PartId { get; set; }
 
         public virtual Part Part { get; set; }

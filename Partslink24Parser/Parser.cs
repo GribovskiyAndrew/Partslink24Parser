@@ -281,71 +281,97 @@ namespace Partslink24Parser
 
                 var part = await _requestManager.Get($"https://www.partslink24.com/" + minorCategory.Path + "&_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
 
-                var imagePath = part["data"]["images"][0]["uri"].ToString() + "M&_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                var imageName = minorCategory.Id + ".png";
 
-                var img = await _requestManager.Get($"https://www.partslink24.com/" + imagePath + "M&_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-
-                var base64String = img["image"].ToString();
-
-                byte[] imgByte = Convert.FromBase64String(base64String);
-
-                await File.WriteAllBytesAsync("C:\\Users\\lifebookE\\source\\repos\\Partslink24Parser\\Partslink24Parser\\Images\\" + minorCategory.Id + ".png", imgByte);
-
-                List<Point> coordinateList = new List<Point>();
-
-                foreach (var i in img["hotspots"])
+                if (part["data"]["images"] != null)
                 {
-                    foreach (var j in i["areas"])
-                    {
-                        coordinateList.Add(new Point
-                        {
-                            Left = Convert.ToInt32(j["left"]),
-                            Top = Convert.ToInt32(j["top"]),
-                            Width = Convert.ToInt32(j["widht"]),
-                            Height = Convert.ToInt32(j["height"]),
-                            Label = i["key"].ToString(),
-                            MinorCategoryId = minorCategoryInBase.Id
-                        });
-                    }
-                }
+                    var imagePath = part["data"]["images"][0]["uri"].ToString() + "M&_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-                await _context.Points.BulkInsertAsync(coordinateList);
+                    var img = await _requestManager.Get($"https://www.partslink24.com/" + imagePath + "M&_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+                    var base64String = img["image"].ToString();
+
+                    byte[] imgByte = Convert.FromBase64String(base64String);
+
+                    await File.WriteAllBytesAsync("C:\\Users\\lifebookE\\source\\repos\\Partslink24Parser\\Partslink24Parser\\Images\\" + imageName, imgByte);
+
+                    List<Point> coordinateList = new List<Point>();
+
+                    foreach (var i in img["hotspots"])
+                    {
+                        foreach (var j in i["areas"])
+                        {
+                            coordinateList.Add(new Point
+                            {
+                                Left = Convert.ToInt32(j["left"]),
+                                Top = Convert.ToInt32(j["top"]),
+                                Width = Convert.ToInt32(j["widht"]),
+                                Height = Convert.ToInt32(j["height"]),
+                                Label = i["key"].ToString(),
+                                MinorCategoryId = minorCategoryInBase.Id
+                            });
+                        }
+                    }
+
+                    await _context.Points.BulkInsertAsync(coordinateList);
+                }
+                else
+                {
+                    imageName = "-";
+                }
 
                 foreach (var data in part["data"]["records"])
                 {
-
-                    var Position_ = data["values"]["pos"] != null ? data["values"]["pos"].ToString() : "-";
-                    var PartNumber_ = data["values"]["partno"] != null ? data["values"]["partno"].ToString() : "-";
-                    var Description_ = data["description"].ToString();
-                    var Remark_ = data["values"]["remark"] != null ? data["values"]["remark"].ToString() : "-";
-                    var Unit_ = data["values"]["qty"] != null ? data["values"]["qty"].ToString() : "-";
-                    var Model_ = data["values"]["modelDescription"] != null ? data["values"]["modelDescription"].ToString() : "-";
-                    var Path_ = data["link"] != null ? data["link"]["path"].ToString() : "-";
-                    var Unavailable_ = data["unavailable"] != null ? true : false;
-
-                    var p = new Part
+                    partsList.Add(new Part
                     {
-                        Position = Position_,
-                        PartNumber = PartNumber_,
-                        Description = Description_,
-                        Remark = Remark_,
-                        Unit = Unit_,
-                        Model = Model_,
-                        Path = Path_,
-                        Unavailable = Unavailable_,
-                        ImageName = minorCategoryInBase.Id + ".png",
+                        Position = data["values"]["pos"] != null ? data["values"]["pos"].ToString() : "-",
+                        PartNumber = data["values"]["partno"] != null ? data["values"]["partno"].ToString() : "-",
+                        Description = data["values"]["description"] != null ? data["values"]["description"].ToString() : "-",
+                        Remark = data["values"]["remark"] != null ? data["values"]["remark"].ToString() : "-",
+                        Unit = data["values"]["qty"] != null ? data["values"]["qty"].ToString() : "-",
+                        Model = data["values"]["modelDescription"] != null ? data["values"]["modelDescription"].ToString() : "-",
+                        Path = data["link"] != null ? data["link"]["path"].ToString() : "-",
+                        Unavailable = data["unavailable"] != null ? true : false,
+                        ImageName = imageName,
                         Done = true,
                         MinorCategoryId = minorCategoryInBase.Id
-
-                    };
-
-                    partsList.Add(p);
+                    });
                 }
             }
 
             await _context.Parts.BulkInsertAsync(partsList);
 
-            //await _context.PartInformation.BulkInsertAsync();
+            List<PartInformation> partInformationList = new List<PartInformation>();
+
+            foreach (var part in partsList)
+            {
+                var partInBase = await _context.Parts.FirstOrDefaultAsync(x =>
+                                            x.Position == part.Position &&
+                                            x.PartNumber == part.PartNumber &&
+                                            x.Description == part.Description &&
+                                            x.Remark == part.Remark &&
+                                            x.Model == part.Model &&
+                                            x.Unit == part.Unit &&
+                                            x.Unit == part.Unit &&
+                                            x.MinorCategoryId == part.MinorCategoryId
+                                            );
+
+                var partInfo = await _requestManager.Get($"https://www.partslink24.com/" + part.Path + "&_=" + DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+
+                foreach (var data in partInfo["data"]["records"])
+                {
+                    partInformationList.Add(new PartInformation
+                    {
+                        PartNumber = data["values"]["pos"] != null ? data["values"]["pos"].ToString() : "-",
+                        Description = data["values"]["description"] != null ? data["values"]["description"].ToString() : "-",
+                        Price = data["values"]["remark"] != null ? data["values"]["remark"].ToString() : "-",
+                        //Unavailable = data["unavailable"] != null ? true : false,
+                        PartId = partInBase.Id
+                    });
+                }
+            }
+
+            await _context.PartInformation.BulkInsertAsync(partInformationList);
 
             driver.Dispose();
 

@@ -4,6 +4,9 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Net.Http;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
 
 namespace Partslink24Parser
 {
@@ -108,7 +111,6 @@ namespace Partslink24Parser
 
         public async Task<JObject> Get(string url)
         {
-            
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
                 foreach (var header in headers)
@@ -118,8 +120,80 @@ namespace Partslink24Parser
 
                 var response = await _httpClient.SendAsync(request);
 
+                var resp = await GetResponse(response);
+
+                if( resp == null)
+                {
+
+                }
                 return await GetResponse(response);
             }
+        }
+
+        public void AddHeaders()
+        {
+            ChromeOptions options = new ChromeOptions();
+            //options.AddArguments(new List<string>() { "--headless", "--no-sandbox", "--disable-dev-shm-usage" });
+            options.AcceptInsecureCertificates = true;
+            options.LeaveBrowserRunning = false;
+            options.AddArgument("--disable-blink-features=AutomationControlled");
+            options.SetLoggingPreference(LogType.Performance, LogLevel.All);
+
+            ChromeDriver driver = new ChromeDriver(options);
+            driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(30);
+
+            driver.Navigate().GoToUrl("https://www.partslink24.com/partslink24/user/login.do");
+
+            var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
+            driver.FindElement(By.CssSelector("div#usercentrics-root")).GetShadowRoot().FindElement(By.CssSelector("button[data-testid=\"uc-accept-all-button\"]")).Click();
+
+            //wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//button[.='Accept All']"))).Click();
+
+            driver.FindElement(By.Id("login-id")).SendKeys("ua-915030");
+            driver.FindElement(By.Id("login-name")).SendKeys("admin");
+            driver.FindElement(By.Id("inputPassword")).SendKeys("Idonot002");
+            driver.FindElement(By.Id("login-btn")).Click();
+
+            if (isElementPresent(driver, By.Id("squeezeout-login-btn")))
+            {
+                driver.FindElement(By.Id("squeezeout-login-btn")).Click();
+            }
+
+            driver.FindElement(By.CssSelector("input[placeholder=\"Search VIN\"]")).SendKeys("WVWA12608CT025946");
+
+            driver.FindElement(By.CssSelector("div[class=\"search-txt\"]")).Click();
+
+            Dictionary<string, string> _headers = new Dictionary<string, string>();
+
+            driver.FindElement(By.CssSelector(".p5_vehicle_info_vin"));
+
+            logs = driver.Manage().Logs;
+
+            perf = logs.GetLog(LogType.Performance);
+
+            item = perf.Select(x => x.Message).Where(x => x != null && x.Contains("/groups/vin_maingroups") && x.Contains("authorization") && x.Contains("cookie") && x.Contains("authority") && x.Contains("accept-language")).FirstOrDefault();
+
+            result = JObject.Parse(item);
+
+            headers = result["message"]["params"]["headers"];
+
+            _headers = new Dictionary<string, string>();
+
+            foreach (JProperty prop in headers.OfType<JProperty>())
+            {
+                if (prop.Name != "content-length" && prop.Name != "content-type" && prop.Name != ":method" && prop.Name != ":path" && prop.Name != ":scheme" && prop.Name != "accept-encoding")
+                {
+                    if (prop.Name == ":authority")
+                        _headers.Add("authority", prop.Value.ToString());
+                    else
+                        _headers.Add(prop.Name, prop.Value.ToString());
+                }
+
+                //_headers.Add(prop.Name, prop.Value.ToString());
+            }
+
+            _requestManager.AddHeaders(_headers);
         }
 
         public async Task<JObject> Post(string url, object data)

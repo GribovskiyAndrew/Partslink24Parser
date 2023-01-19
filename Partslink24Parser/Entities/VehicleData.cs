@@ -3,7 +3,7 @@ namespace Partslink24Parser.Entities
 {
     public class VehicleData : BaseEntity
     {
-        public string VinNumber { get; set; }
+        //public string VinNumber { get; set; }
 
         public string Model { get; set; }
 
@@ -28,6 +28,10 @@ namespace Partslink24Parser.Entities
         public bool Done { get; set; }
 
         public virtual ICollection<MajorCategory> MajorCategories { get; set; }
+
+        public int VinNumberId { get; set; }
+
+        public virtual VinNumber VinNumber { get; set; }
 
     }
 }

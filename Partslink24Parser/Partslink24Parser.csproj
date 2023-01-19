@@ -15,15 +15,15 @@
   <ItemGroup>
     <PackageReference Include="DotNetSeleniumExtras.WaitHelpers" Version="3.11.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.0">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Selenium.WebDriver" Version="4.6.0" />
-    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="107.0.5304.6200" />
-    <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="7.17.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.7.0" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="109.0.5414.7400" />
+    <PackageReference Include="Z.EntityFramework.Extensions.EFCore" Version="7.18.2" />
   </ItemGroup>
 
 </Project>

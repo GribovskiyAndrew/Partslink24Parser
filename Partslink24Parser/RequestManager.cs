@@ -3,10 +3,9 @@ using System.Net.Http.Headers;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using System.Net.Http;
-using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
+using OpenQA.Selenium;
 
 namespace Partslink24Parser
 {
@@ -14,7 +13,10 @@ namespace Partslink24Parser
     {
         private readonly HttpClient _httpClient;
 
-        private Dictionary<string, string> headers = new Dictionary<string, string>();
+        private Dictionary<string, string> _headers = new Dictionary<string, string>();
+
+        public string Vin { get; set; }
+
         public RequestManager()
         {
             var handler = new HttpClientHandler();
@@ -104,34 +106,30 @@ namespace Partslink24Parser
             //request.Headers.TryAddWithoutValidation("sec-ch-ua-platform", "\"Windows\"");
         }
 
-        public void AddHeaders(Dictionary<string, string> _headers)
+        public void AddHeaders(Dictionary<string, string> headersDictionary)
         {
-            headers = _headers;
+            _headers = headersDictionary;
         }
 
-        public async Task<JObject> Get(string url)
+        private bool isElementPresent(ChromeDriver driver, By by)
         {
-            using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+            var elem = driver.FindElements(by).Count > 0;
+
+            try
             {
-                foreach (var header in headers)
-                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-
-                //AddHeaders(request);
-
-                var response = await _httpClient.SendAsync(request);
-
-                var resp = await GetResponse(response);
-
-                if( resp == null)
-                {
-
-                }
-                return await GetResponse(response);
+                IWebElement element = driver.FindElement(by);
             }
+            catch (Exception ex)
+            {
+                return false;
+            }
+            return true;
         }
 
-        public void AddHeaders()
+        public async Task AddHeaders()
         {
+            _headers = new Dictionary<string, string>();
+
             ChromeOptions options = new ChromeOptions();
             //options.AddArguments(new List<string>() { "--headless", "--no-sandbox", "--disable-dev-shm-usage" });
             options.AcceptInsecureCertificates = true;
@@ -155,32 +153,30 @@ namespace Partslink24Parser
             driver.FindElement(By.Id("inputPassword")).SendKeys("Idonot002");
             driver.FindElement(By.Id("login-btn")).Click();
 
-            if (isElementPresent(driver, By.Id("squeezeout-login-btn")))
+            var element = driver.FindElements(By.Id("squeezeout-login-btn")).Count > 0;
+
+            if (element)
             {
                 driver.FindElement(By.Id("squeezeout-login-btn")).Click();
             }
 
-            driver.FindElement(By.CssSelector("input[placeholder=\"Search VIN\"]")).SendKeys("WVWA12608CT025946");
+            driver.FindElement(By.CssSelector("input[placeholder=\"Search VIN\"]")).SendKeys(Vin);
 
             driver.FindElement(By.CssSelector("div[class=\"search-txt\"]")).Click();
 
-            Dictionary<string, string> _headers = new Dictionary<string, string>();
+       
 
             driver.FindElement(By.CssSelector(".p5_vehicle_info_vin"));
 
-            logs = driver.Manage().Logs;
 
-            perf = logs.GetLog(LogType.Performance);
 
-            item = perf.Select(x => x.Message).Where(x => x != null && x.Contains("/groups/vin_maingroups") && x.Contains("authorization") && x.Contains("cookie") && x.Contains("authority") && x.Contains("accept-language")).FirstOrDefault();
+            var item = driver.Manage().Logs.GetLog(LogType.Performance).Select(x => x.Message).Where(x => x != null && x.Contains("/directAccess") && x.Contains("referer") && x.Contains("cookie") && x.Contains("authority") && x.Contains("x-requested-with")).FirstOrDefault();
 
-            result = JObject.Parse(item);
+            JObject result = JObject.Parse(item);
 
-            headers = result["message"]["params"]["headers"];
+            var headersDict = result["message"]["params"]["headers"];
 
-            _headers = new Dictionary<string, string>();
-
-            foreach (JProperty prop in headers.OfType<JProperty>())
+            foreach (JProperty prop in headersDict.OfType<JProperty>())
             {
                 if (prop.Name != "content-length" && prop.Name != "content-type" && prop.Name != ":method" && prop.Name != ":path" && prop.Name != ":scheme" && prop.Name != "accept-encoding")
                 {
@@ -193,14 +189,80 @@ namespace Partslink24Parser
                 //_headers.Add(prop.Name, prop.Value.ToString());
             }
 
-            _requestManager.AddHeaders(_headers);
+            //var tol = driver.Manage().Cookies.GetCookieNamed("LX_SERVER").Value;
+
+            //var tol1 = driver.Manage().Cookies.GetCookieNamed("JSESSIONID").Value;
+
+            //var token = await Post("https://www.partslink24.com/auth/ext/api/1.1/authorize",
+            //    new { serviceNames = new string[] { "cart", "config_parts", "pl24-full-vin-data", "pl24-sendbtmail", "pl24-orderbridge", "vw_parts" }, withLogin = true });
+
+            //var authorization = token["token_type"].ToString() + " " + token["access_token"].ToString();
+
+            //_headers["authorization"] = authorization;
+
+            //string cookie = $"_gcl_au={driver.Manage().Cookies.GetCookieNamed("_gcl_au").Value}; _fbp={driver.Manage().Cookies.GetCookieNamed("_fbp").Value}; PL24SESSIONID={driver.Manage().Cookies.GetCookieNamed("PL24SESSIONID").Value}; pl24LoggedInTrail={driver.Manage().Cookies.GetCookieNamed("pl24LoggedInTrail").Value}; PL24TOKEN={driver.Manage().Cookies.GetCookieNamed("PL24TOKEN").Value}";
+
+            //_headers["cookie"] = cookie;
+
+            driver.Dispose();
+        }
+
+        public async Task<JObject> Get(string url)
+        {
+            using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+            {
+                foreach (var header in _headers)
+                    request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+
+                //AddHeaders(request);
+
+                var response = await _httpClient.SendAsync(request);
+
+                var data = await GetResponse(response);
+
+                if (data == null)
+                {
+
+                    Console.WriteLine("Start delay");
+
+                    await Task.Delay(1200000);
+
+                    Console.WriteLine("End delay");
+
+                    await AddHeaders();
+
+                    using (var requestSecond = new HttpRequestMessage(HttpMethod.Get, url))
+                    {
+                        foreach (var header in _headers)
+                            requestSecond.Headers.TryAddWithoutValidation(header.Key, header.Value);
+
+                        //AddHeaders(request);
+
+                        //Console.WriteLine("Start delay");
+
+                        //await Task.Delay(1200000);
+
+                        //Console.WriteLine("End delay");
+
+                        response = await _httpClient.SendAsync(requestSecond);
+
+                        data = await GetResponse(response);
+                    }
+
+
+                        //data = await Get(url);
+      
+                }
+
+                return data;
+            }
         }
 
         public async Task<JObject> Post(string url, object data)
         {
             using (var request = new HttpRequestMessage(HttpMethod.Post, url))
             {
-                foreach (var header in headers)
+                foreach (var header in _headers)
                     request.Headers.TryAddWithoutValidation(header.Key, header.Value);
 
                 //AddHeaders(request);

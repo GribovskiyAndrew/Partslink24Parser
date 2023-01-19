@@ -21,6 +21,8 @@ namespace Partslink24Parser
             return context;
         }
 
+        public DbSet<VinNumber> VinNumbers { get; set; }
+
         public DbSet<VehicleData> VehicleData { get; set; }
 
         public DbSet<MajorCategory> MajorСategories { get; set; }
